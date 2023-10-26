@@ -1,4 +1,3 @@
-#v0.4
 import sys
 import os
 import json
@@ -55,32 +54,33 @@ async def monitor_channels():
                 channel_id = "-100" + channel_id
 
             last_id = last_message_ids.get(channel_id, 0)
+            max_id = last_id
 
             try:
-                max_id = 0
                 async for message in client_user.iter_messages(int(channel_id), min_id=last_id + 1):
                     if status == "all":
                         await client_user.forward_messages(MY_CHANNEL_ID, message)
                         logger.info(f"Пересылаем сообщение с ID {message.id} из канала {channel_id}")
-                    elif status == "kwd":
+                    elif status == "kwd" and message.text:
                         logger.info(f"Проверка сообщения с ID {message.id} из канала {channel_id} на наличие ключевых слов")
-                        if message.text and contains_keywords(message.text):
+                        if contains_keywords(message.text):
                             await client_user.forward_messages(MY_CHANNEL_ID, message)
                             logger.info(f"Пересылаем сообщение с ID {message.id} из канала {channel_id} по ключевым словам")
                         else:
                             logger.info(f"Сообщение с ID {message.id} из канала {channel_id} не содержит ключевых слов")
 
-
                     if message.id > max_id:
                         max_id = message.id
-                        last_message_ids[channel_id] = max_id
-                        save_last_message_ids()
-                        logger.info(f"Обновленный ID для канала {channel_id}: {max_id}")
+
+                if max_id > last_id:
+                    last_message_ids[channel_id] = max_id
+                    save_last_message_ids()
+                    logger.info(f"Обновленный ID для канала {channel_id}: {max_id}")
 
             except Exception as e:
                 logger.error(f"Ошибка при обработке канала {channel_id}: {e}")
 
-        await asyncio.sleep(60)
+        await asyncio.sleep(30)
 
 async def join_channels_from_file():
     while True:
