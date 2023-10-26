@@ -1,3 +1,4 @@
+#v0.4
 import sys
 import os
 from telethon import TelegramClient, events
@@ -32,7 +33,7 @@ def get_input_type(user_input):
 
 # Функция для добавления ключевых слов в keywords.txt
 def add_keywords(keywords):
-    with open(os.path.join(ROOT_DIR, "keywords.txt"), "r") as file:
+    with open(os.path.join(ROOT_DIR, "keywords.txt"), "r", encoding="utf-8") as file:
         existing_keywords = file.readlines()
     existing_keywords = [kw.strip() for kw in existing_keywords]
     with open(os.path.join(ROOT_DIR, "keywords.txt"), "a") as file:
