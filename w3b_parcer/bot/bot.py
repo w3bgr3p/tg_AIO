@@ -124,39 +124,44 @@ async def send_bot_message(text):
 
 @client_bot.on(events.NewMessage(pattern='/change_status'))
 async def change_status_command(event):
-    args = event.text.split()
-    if len(args) != 3:
-        await event.respond("Используйте формат: `/change_status {имя канала} {off/kwd/all}`")
+    lines = event.text.split('\n')[1:]  # пропускаем первую строку с командой
+    if not lines or len(lines) < 2:
+        await event.respond("Используйте формат: `/change_status {имя канала или ID канала} ... {off/kwd/all}`")
         return
 
-    channel_input, status = args[1], args[2]
-    if status not in ['off', 'kwd', 'all']:
+    status = lines[-1].strip()  # последняя строка - это статус
+    if status not in ['off', 'kwd', 'all'] or len(status) != 3:
         await event.respond("Неверный статус. Допустимые статусы: off, kwd, all.")
         return
 
-    channel_id = await get_channel_id_from_input(channel_input)
-    if not channel_id:
-        await event.respond("Неверный формат канала.")
-        return
+    channels_input = lines[:-1]  # все строки, кроме последней, это каналы
 
-    with open(os.path.join(ROOT_DIR, "watch.txt"), "r") as file:
-        lines = file.readlines()
+    for channel_input in channels_input:
+        channel_id = await get_channel_id_from_input(channel_input.strip())
+        if not channel_id:
+            await event.respond(f"Неверный формат канала: {channel_input}.")
+            return
 
-    found = False
-    for i, line in enumerate(lines):
-        if line.startswith(channel_id):
-            lines[i] = f"{channel_id} : {channel_input} : {status}\n"
-            found = True
-            break
+        with open(os.path.join(ROOT_DIR, "watch.txt"), "r") as file:
+            file_lines = file.readlines()
 
-    if not found:
-        await event.respond("Канал не найден в списке.")
-        return
+        found = False
+        for i, line in enumerate(file_lines):
+            if line.startswith(channel_id):
+                file_lines[i] = f"{channel_id} : {channel_input.strip()} : {status}\n"
+                found = True
+                break
 
-    with open(os.path.join(ROOT_DIR, "watch.txt"), "w") as file:
-        file.writelines(lines)
+        if not found:
+            await event.respond(f"Канал {channel_input} не найден в списке.")
+            return
 
-    await event.respond(f"Статус канала {channel_input} изменен на {status}.")
+        with open(os.path.join(ROOT_DIR, "watch.txt"), "w") as file:
+            file.writelines(file_lines)
+
+    await event.respond(f"Статус для каналов {', '.join(channels_input)} изменен на {status}.")
+
+
 
 @client_bot.on(events.NewMessage(pattern='/start'))
 async def start_command(event):
