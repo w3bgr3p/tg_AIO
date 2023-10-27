@@ -1,5 +1,7 @@
 import sys
+import telethon
 import os
+import time
 import json
 from telethon import TelegramClient, events
 import logging
@@ -58,6 +60,10 @@ async def monitor_channels():
 
             try:
                 async for message in client_user.iter_messages(int(channel_id), min_id=last_id + 1):
+                    # Пропустить служебные сообщения
+                    if isinstance(message, telethon.tl.patched.MessageService):
+                        continue
+
                     if status == "all":
                         await client_user.forward_messages(MY_CHANNEL_ID, message)
                         logger.info(f"Пересылаем сообщение с ID {message.id} из канала {channel_id}")
@@ -73,14 +79,22 @@ async def monitor_channels():
                         max_id = message.id
 
                 if max_id > last_id:
+                    logger.info(f"Обновление ID для канала {channel_id} с {last_id} на {max_id}")
                     last_message_ids[channel_id] = max_id
                     save_last_message_ids()
                     logger.info(f"Обновленный ID для канала {channel_id}: {max_id}")
 
             except Exception as e:
-                logger.error(f"Ошибка при обработке канала {channel_id}: {e}")
+                if "A wait of" in str(e) and "is required" in str(e):
+                    wait_time = int(str(e).split(" ")[3]) + 5  # извлекаем время ожидания и добавляем 5 секунд на всякий случай
+                    logger.warning(f"Ожидание {wait_time} секунд из-за ограничений Telegram API...")
+                    time.sleep(wait_time)
+                else:
+                    logger.error(f"Ошибка при обработке канала {channel_id}: {e}")
 
         await asyncio.sleep(30)
+
+
 
 async def join_channels_from_file():
     while True:
