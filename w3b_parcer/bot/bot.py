@@ -1,4 +1,3 @@
-#v0.4
 import sys
 import os
 from telethon import TelegramClient, events
@@ -177,22 +176,27 @@ async def start_command(event):
     
 @client_bot.on(events.NewMessage(pattern='/add_chan'))
 async def add_chan_command(event):
-    user_input = event.text.split(maxsplit=1)
-    if len(user_input) < 2:
-        await event.respond("Пожалуйста, укажите ID, @username или ссылку на канал после команды. Например, `/add_chan @channelname`.")
-        return
-    user_input = user_input[1].strip()
-    input_type = get_input_type(user_input)
-    if input_type == "ID":
-        await handle_id(user_input)
-    elif input_type == "USERNAME":
-        await handle_username(user_input)
-    elif input_type == "LINK":
-        await handle_link(user_input)
-    else:
-        await event.respond("Неверный формат ввода. Пожалуйста, введите корректный ID, @username или ссылку.")
-        return
-    await event.respond(f"Добавлено: {user_input}")
+    # Разбиваем текст на строки
+    values = event.text.split('\n')[1:]  # первая строка - это сама команда /add_chan
+
+    for user_input in values:
+        user_input = user_input.strip()
+        if not user_input:
+            continue  # пропускаем пустые строки
+
+        input_type = get_input_type(user_input)
+        if input_type == "ID":
+            await handle_id(user_input)
+        elif input_type == "USERNAME":
+            await handle_username(user_input)
+        elif input_type == "LINK":
+            await handle_link(user_input)
+        else:
+            await event.respond(f"Неверный формат ввода для {user_input}. Пожалуйста, введите корректный ID, @username или ссылку.")
+            continue
+
+        await event.respond(f"Добавлено: {user_input}")
+
 
 @client_bot.on(events.NewMessage(pattern='/add_keywords'))
 async def add_keywords_command(event):
@@ -206,7 +210,7 @@ async def add_keywords_command(event):
 
 @client_bot.on(events.NewMessage(pattern='/view_keywords'))
 async def view_keywords_command(event):
-    with open(os.path.join(ROOT_DIR, "keywords.txt"), "r") as file:
+    with open(os.path.join(ROOT_DIR, "keywords.txt"), "r", encoding="utf-8") as file:
         keywords = file.readlines()
     if keywords:
         await event.respond(f"Текущие ключевые слова: {', '.join(keywords)}")
@@ -235,7 +239,7 @@ async def rm_kwd_command(event):
 
 @client_bot.on(events.NewMessage(pattern='/view_channels'))
 async def view_channels_command(event):
-    with open(os.path.join(ROOT_DIR, "watch.txt"), "r") as file:
+    with open(os.path.join(ROOT_DIR, "watch.txt"), "r", encoding="utf-8") as file:
         channels = file.readlines()
     if channels:
         await event.respond(f"Текущие каналы:\n{''.join(channels)}")
