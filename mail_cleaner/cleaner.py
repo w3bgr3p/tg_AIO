@@ -11,7 +11,7 @@ logging.basicConfig(format='[%(levelname) 5s/%(asctime)s] %(name)s: %(message)s'
 client = TelegramClient('my_session', settings.API_ID, settings.API_HASH)
 logging.info("Клиент создан")
 
-@client.on(events.NewMessage(chats=-1001876499364))
+@client.on(events.NewMessage(chats=-100xxxxxxxxxx))
 async def message_handler(event):
     logging.info("Получено новое сообщение")
     
