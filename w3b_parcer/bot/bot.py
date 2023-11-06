@@ -130,36 +130,26 @@ async def change_status_command(event):
         return
 
     status = lines[-1].strip()  # последняя строка - это статус
-    if status not in ['off', 'kwd', 'all'] or len(status) != 3:
+    if status not in ['off', 'kwd', 'all']:
         await event.respond("Неверный статус. Допустимые статусы: off, kwd, all.")
         return
 
     channels_input = lines[:-1]  # все строки, кроме последней, это каналы
 
-    for channel_input in channels_input:
-        channel_id = await get_channel_id_from_input(channel_input.strip())
-        if not channel_id:
-            await event.respond(f"Неверный формат канала: {channel_input}.")
-            return
-
-        with open(os.path.join(ROOT_DIR, "watch.txt"), "r") as file:
-            file_lines = file.readlines()
-
-        found = False
-        for i, line in enumerate(file_lines):
-            if line.startswith(channel_id):
-                file_lines[i] = f"{channel_id} : {channel_input.strip()} : {status}\n"
-                found = True
-                break
-
-        if not found:
-            await event.respond(f"Канал {channel_input} не найден в списке.")
-            return
-
-        with open(os.path.join(ROOT_DIR, "watch.txt"), "w") as file:
-            file.writelines(file_lines)
+    with open(os.path.join(ROOT_DIR, "watch.txt"), "r+") as file:
+        file_lines = file.readlines()
+        file.seek(0)
+        for line in file_lines:
+            parts = line.split(' : ')
+            if parts[0] in channels_input:
+                parts[2] = status + '\n'  # изменяем только статус
+                file.write(' : '.join(parts))
+            else:
+                file.write(line)
+        file.truncate()  # обрезаем файл, если он стал короче
 
     await event.respond(f"Статус для каналов {', '.join(channels_input)} изменен на {status}.")
+
 
 
 
@@ -167,6 +157,7 @@ async def change_status_command(event):
 async def start_command(event):
     await event.respond(
         'w3bparcer manager v0.3\n'
+        '- Все данные вводятся с новой строки после команды, данные на строке команды не читаются \n'
         '- Добавить канал: `/add_chan` + ID, @username или ссылка\n'
         '- Удалить канал: `/rm_chan` + ID, @username или ссылка\n'
         '- Просмотреть список каналов для отслеживания: `/view_channels`\n'
