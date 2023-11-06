@@ -34,7 +34,20 @@ async def get_user_channels():
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-client_user = TelegramClient('user_session', API_ID, API_HASH)
+# Путь к файлу сессии
+session_file_name = 'user_session.session'
+session_file_path = os.path.join(ROOT_DIR, session_file_name)
+
+# Проверяем наличие файла сессии
+if not os.path.exists(session_file_path):
+    # Файла нет, создаем новую сессию
+    client_user = TelegramClient('user_session', API_ID, API_HASH)
+else:
+    # Файл сессии существует, используем его для создания клиента
+    client_user = TelegramClient(session_file_path, API_ID, API_HASH)
+
+
+
 last_message_ids = load_last_message_ids()
 logger.info(f"Загруженные последние ID сообщений при старте: {last_message_ids}")
 
