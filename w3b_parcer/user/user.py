@@ -72,7 +72,7 @@ async def monitor_channels():
             max_id = last_id
 
             try:
-                async for message in client_user.iter_messages(int(channel_id), min_id=last_id + 1):
+                async for message in client_user.iter_messages(int(channel_id), min_id=last_id):
                     # Пропустить служебные сообщения
                     if isinstance(message, telethon.tl.patched.MessageService):
                         continue
@@ -88,13 +88,16 @@ async def monitor_channels():
                         else:
                             logger.info(f"Сообщение с ID {message.id} из канала {channel_id} не содержит ключевых слов")
 
-                    if message.id > max_id:
+                    if message.id > max_id:                    
                         max_id = message.id
+                        logger.debug(f"Найдено новое сообщение с ID {message.id} в канале {channel_id}, текущий max_id = {max_id}")
 
                 if max_id > last_id:
                     logger.info(f"Обновление ID для канала {channel_id} с {last_id} на {max_id}")
+                    logger.debug(f"Предстоящее обновление last_message_ids для канала {channel_id}: текущий max_id = {max_id}, last_id = {last_id}")
                     last_message_ids[channel_id] = max_id
                     save_last_message_ids()
+                    logger.debug(f"last_message_ids после обновления для канала {channel_id}: {last_message_ids[channel_id]}")
                     logger.info(f"Обновленный ID для канала {channel_id}: {max_id}")
 
             except Exception as e:
@@ -104,8 +107,9 @@ async def monitor_channels():
                     time.sleep(wait_time)
                 else:
                     logger.error(f"Ошибка при обработке канала {channel_id}: {e}")
+                    logger.error(f"Ошибка при обработке сообщений в канале {channel_id}: {e}", exc_info=True)
 
-        await asyncio.sleep(30)
+        await asyncio.sleep(20)
 
 
 
